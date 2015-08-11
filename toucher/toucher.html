@@ -1,0 +1,280 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta charset="utf-8">
+		<meta name="author" content="www.tobie.cn Liangjingxian" />
+		<meta name="viewport" content="width=device-width, user-scalable=0, initial-scale=1">
+		
+		<title>toucher.js测试案例</title>
+		<!--
+        	作者：80669256@qq.com
+        	时间：2015-08-11
+        	描述：从gitHub发现的一个移动端触控插件   付demo
+        -->
+        <style type="text/css">
+        	*{ margin: 0; padding: 0;}
+        	html,body{ width: 100%; height: 100%; background: #F0F0F0;}
+        	.btn{ margin: 1%; line-height: 40px; overflow: hidden;    text-align: center; float: left; border-radius: 5px;}
+        	.warp{ overflow: hidden;}
+        	
+        	/*滑动删除*/
+        	.list-group{margin-top:40px}
+			.list-item{position:relative;height:50px;border-bottom:1px solid #ccc;background:#eee;overflow:hidden}
+			.list-item:nth-child(1){border-top:1px solid #ccc;}
+			.list-item-body{padding:0 20px;line-height:50px;transition:.2s}
+			.list-item-del{position:absolute;height:100%;width:80px;top:0;right:-80px;line-height:50px;background:#e00;color:#fff;text-align:center;transition:.2s}
+			.list-item-status-del .list-item-body{margin-left:-80px}
+			.list-item-status-del .list-item-del{right:0}
+			
+			.progress-cnt{height:40px;margin-bottom:20px;border-radius:4px;background:#5a3;overflow:hidden}
+			.progress-bar{position:relative;width:50px;height:40px;background:#380;border-radius:4px;text-align:center;line-height:40px;font-size:14px;color:#fff}
+			#dragY{width:50px;height:200px;margin:5% 3%}
+			#dragX{ margin:3%}
+			#drag{height:200px;margin:3%}
+			.error-pop{position:fixed;bottom:0;left:0;width:100%;padding:20px 0;background:rgba(0,0,0,.7);text-align:center;color:#fff;font-size:14px;font-family:"Microsoft Yahei";line-height:20px}
+			.error-pop:before{margin-right:5px;content:'●';color:#f50;font-weight:bolder;font-size:30px;vertical-align:sub}
+
+        </style>
+        <script src="http://libs.baidu.com/jquery/1.9.0/jquery.js"></script>
+        <script src="js/toucher.js" type="text/javascript" charset="utf-8"></script>
+	</head>
+	<body>
+		<script type="text/javascript">
+			$(function(){
+				//轻击singleTap：触摸一次屏幕，需要完成手指从放下到抬起，且中途无移动。
+				var oDiv1 = util.toucher($("#div1")[0]);//写法一 jquery获取元素时选择第一个下标，原生不考虑
+				oDiv1.on('singleTap',function(){
+					alert('singleTap');
+					return false;
+				});
+				//双击doubleTap：快速触摸两次屏幕。
+				util.toucher(document.querySelector('#div2')).on('doubleTap',function(){
+					alert('doubleTap');
+				});
+				//长击longTap：手指长时间按下不松，触发此事件。
+				util.toucher(document.querySelector('#div3')).on('longTap',function(){
+					alert('longTap');
+				});
+				//上划swipeUp：手指快速向上滑动。
+				util.toucher(document.querySelector('#div4')).on('swipeUp',function(){
+					alert('swipeUp');
+				});
+				//右划swipeRight：手指快速向右滑动。
+				util.toucher(document.querySelector('#div5')).on('swipeRight',function(){
+					alert('swipeRight');
+				});
+				//下划swipeDown：手指快速向下滑动。
+				util.toucher(document.querySelector('#div6')).on('swipeDown',function(){
+					alert('swipeDown');
+				});
+				//左划swipeLeft：手指快速向左滑动。
+				util.toucher(document.querySelector('#div7')).on('swipeLeft',function(){
+					alert('swipeLeft');
+				});
+				
+				/**
+				 *  高级事件：
+				 *  滑动开始swipeStart：手指落下屏幕一瞬间即会触发此事件。
+				 *	滑动swipe：手指在屏幕上移动时，会持续触发此事件。
+				 *	滑动结束swipeEnd：手指离开屏幕一瞬间即会触发此事件。
+				 * */
+				(function(){
+					var disX =0;
+					var disY =0;
+					util.toucher(document.querySelector('#div8')).on('swipeStart',function(ev){
+						  disX = parseInt(this.style.left) || 0;
+						  disY = parseInt(this.style.top) || 0;
+						  this.style.transition = 'none';
+						  this.style.opacity = 1;
+					}).on('swipe',function(ev){
+						  this.style.left = (disX + ev.moveX) + 'px';
+						  this.style.top = (disY + ev.moveY) + 'px';
+						  return false;
+					}).on('swipeEnd',function(){
+						  this.style.transition = '.1s';
+						  this.style.left = '0px';
+						  this.style.top = '0px';
+					})
+				})()
+				
+				/**
+				 * 向左滑动删除
+				 * */
+				util.toucher(document.getElementById('listGroupA'))
+				.on('swipeLeft','.list-item',function(){
+				  $(this).addClass('list-item-status-del');
+				  return false;
+				})
+				.on('swipeRight','.list-item',function(){
+				  $(this).removeClass('list-item-status-del');
+				  return false;
+				})
+				.on('singleTap','.list-item-del',function(){
+				  $(this).parent().remove();
+				});
+				
+				/**
+				 * 长按删除
+				 * */
+				util.toucher(document.getElementById('listGroupB'))
+				.on('longTap','.list-item',function(){
+				   if(confirm("确定要删除该条数据吗？")){
+					 $(this).remove();
+				   }
+				});
+				
+				/**
+				 *  单向拖动 Y
+				 *	UI组件中可能会有进度选择、或数量配置类组件，需要用到单向拖动。
+				 *	相关事件：拖动开始swipeStart、拖动中swipe、拖动结束swipeEnd
+				 * 
+				 * */
+				;(function(){
+					var disY=0;
+					var oDiv = document.getElementById('dragY');
+					function rangeControl(num,max){
+					  num = Math.max(num,0);
+					  return Math.min(num,max);
+					}
+					util.toucher(oDiv)
+					.on('swipeStart','.progress-bar',function(e){
+					  disY = parseInt(this.style.top) || 0;
+					   this.innerHTML = Math.ceil(rangeControl(disY + (e.moveY||0),oDiv.clientHeight - this.clientHeight)/(oDiv.clientHeight - this.clientHeight) * 100) + '%';
+					}).on('swipe','.progress-bar',function(e){
+					  this.style.top = rangeControl(disY + e.moveY,oDiv.clientHeight - this.clientHeight) + 'px';
+					   this.innerHTML = Math.ceil(rangeControl(disY + (e.moveY||0),oDiv.clientHeight - this.clientHeight)/(oDiv.clientHeight - this.clientHeight) * 100) + '%';	
+					 return false;
+					}).on('swipeEnd','.progress-bar',function(e){
+					  this.innerHTML = Math.ceil(rangeControl(disY + (e.moveY||0),oDiv.clientHeight - this.clientHeight)/(oDiv.clientHeight - this.clientHeight) * 100) + '%';
+					  return false;
+					});
+				})();
+				
+				
+				/**
+				 *  单向拖动 X
+				 *	UI组件中可能会有进度选择、或数量配置类组件，需要用到单向拖动。
+				 *	相关事件：拖动开始swipeStart、拖动中swipe、拖动结束swipeEnd
+				 * 
+				 * */
+				;(function(){
+					var disX=0;
+					var oDiv = document.getElementById('dragX');
+					function rangeControl(num,max){
+					  num = Math.max(num,0);
+					  return Math.min(num,max);
+					}
+					util.toucher(oDiv)
+					.on('swipeStart','.progress-bar',function(e){
+					  disX = parseInt(this.style.top) || 0;
+					   this.innerHTML = Math.ceil(rangeControl(disX + (e.moveX||0),oDiv.clientWidth - this.clientWidth)/(oDiv.clientWidth - this.clientWidth) * 100) + '%';
+					}).on('swipe','.progress-bar',function(e){
+					  this.style.left = rangeControl(disX + e.moveX,oDiv.clientWidth - this.clientWidth) + 'px';
+					   this.innerHTML = Math.ceil(rangeControl(disX + (e.moveX||0),oDiv.clientWidth - this.clientWidth)/(oDiv.clientWidth - this.clientWidth) * 100) + '%';	
+					 return false;
+					}).on('swipeEnd','.progress-bar',function(e){
+					  this.innerHTML = Math.ceil(rangeControl(disX + (e.moveX||0),oDiv.clientWidth - this.clientWidth)/(oDiv.clientWidth - this.clientWidth) * 100) + '%';
+					  return false;
+					});
+				})();
+				
+				
+				/**
+				 *  限制性拖动
+				 *	UI组件中可能会有进度选择、或数量配置类组件，需要用到单向拖动。
+				 *	相关事件：拖动开始swipeStart、拖动中swipe、拖动结束swipeEnd
+				 * */
+				 ;(function(){
+				 	var disX =0;
+					var disY =0;
+					var oDiv = document.querySelector('#drag');
+					function rangeControl(num,max){
+					  num = Math.max(num,0);
+					  return Math.min(num,max);
+					}
+					util.toucher(oDiv)
+					.on('swipeStart','.progress-bar',function(e){
+					  disX = parseInt(this.style.left) || 0;
+					  disY = parseInt(this.style.top) || 0;
+					  this.innerHTML = '';
+					}).on('swipe','.progress-bar',function(e){
+					  this.style.left = rangeControl(disX + e.moveX,oDiv.clientWidth - this.clientWidth) + 'px';
+					  this.style.top = rangeControl(disY + e.moveY,oDiv.clientHeight - this.clientHeight) + 'px';
+					  return false;
+					}).on('swipeEnd','.progress-bar',function(e){
+					  return false;
+					});
+				 })()
+			})
+		</script>
+		<div class="warp">
+		
+		<div id="div1" class="btn" style=" width: 30%; height: 40px; background: #0090D9;">
+			单击singleTap
+		</div>
+		<div id="div2" class="btn" style=" width: 30%; height: 40px; background: #0090D9;">
+			双击doubleTap
+		</div>
+		<div id="div3" class="btn" style=" width: 30%; height: 40px; background: #0090D9;">
+			长点击longTap
+		</div>
+		<br /><br />
+		<div id="div4" class="btn" style=" width: 45%; height: 40px; background: #F08E18;">
+			上划swipeUp↑
+		</div>
+		<div id="div5" class="btn" style=" width: 45%; height: 40px; background: #F08E18;">
+			右划swipeRight→
+		</div>
+		<div id="div6" class="btn" style=" width: 45%; height: 40px; background: #F08E18;">
+			下划swipeDown↓
+		</div>
+		<div id="div7" class="btn" style=" width: 45%; height: 40px; background: #F08E18;">
+			左划swipeleft←
+		</div>
+		<br /> 
+		</div>
+		<div id="div8" class="btn" style=" width: 50%; overflow: hidden; z-index:10 ; height: 40px; transition: 0.1s all ease;  left: 0; top: 0; position: relative; background: #FF3B30; margin: 1%">
+			swipe(拖拽返回)
+		</div>
+		<br />
+		<div class="list-group" id="listGroupA">
+		  <div class="list-item ">
+		    <div class="list-item-body">向左滑动删除1</div>
+		    <div class="list-item-del">删除</div>
+		  </div>
+		  <div class="list-item ">
+		    <div class="list-item-body">向左滑动删除2</div>
+		    <div class="list-item-del">删除</div>
+		  </div>
+		  <div class="list-item ">
+		    <div class="list-item-body">向左滑动删除3</div>
+		    <div class="list-item-del">删除</div>
+		  </div>
+		</div>
+		
+		<div class="list-group" id="listGroupB">
+		  <div class="list-item ">
+		    <div class="list-item-body">长按删除1</div>
+		    <div class="list-item-del">删除</div>
+		  </div>
+		  <div class="list-item ">
+		    <div class="list-item-body">长按删除2</div>
+		    <div class="list-item-del">删除</div>
+		  </div>
+		  <div class="list-item ">
+		    <div class="list-item-body">长按删除3</div>
+		    <div class="list-item-del">删除</div>
+		  </div>
+		</div>
+		
+		<div class="progress-cnt" id="dragX">
+		  <div class="progress-bar">0%</div>
+		</div>
+		<div class="progress-cnt" id="dragY">
+		  <div class="progress-bar">0%</div>
+		</div>
+		<div class="progress-cnt" id="drag">
+		  <div class="progress-bar"></div>
+		</div>
+	</body>
+</html>
